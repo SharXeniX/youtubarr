@@ -46,11 +46,21 @@ class TrackItem(models.Model):
     artist_name_guess = models.CharField(max_length=255, blank=True, default="")
     artist = models.ForeignKey(Artist, null=True, blank=True, on_delete=models.SET_NULL)
     blacklisted = models.BooleanField(default=False)
+    dismissed = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
     position = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("playlist", "video_id")
+
+class LogEntry(models.Model):
+    """Application log entries visible in the web UI."""
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+    level = models.CharField(max_length=10)  # INFO, WARNING, ERROR
+    message = models.TextField()
+
+    class Meta:
+        ordering = ["-timestamp"]
 
 class Snapshot(models.Model):
     """What we actually serve to Lidarr; newest wins."""

@@ -132,7 +132,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+FORCE_SCRIPT_NAME = env("FORCE_SCRIPT_NAME", default=None)
+STATIC_URL = (FORCE_SCRIPT_NAME or "") + "/static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -151,3 +152,35 @@ MB_USER_AGENT = env("MB_USER_AGENT", default="YTM-Lidarr-List/0.1 (no-contact@ex
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://redis:6379/0")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://redis:6379/0")
 CELERY_TIMEZONE = "UTC"
+
+# OAuth redirect base URL (public-facing URL of the app)
+OAUTH_REDIRECT_BASE = env("OAUTH_REDIRECT_BASE", default="")
+
+# MusicBrainz OAuth
+MB_OAUTH_CLIENT_ID = env("MB_OAUTH_CLIENT_ID", default="")
+MB_OAUTH_CLIENT_SECRET = env("MB_OAUTH_CLIENT_SECRET", default="")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "%(message)s"},
+    },
+    "handlers": {
+        "db": {
+            "class": "youtubarr.log_handler.DBLogHandler",
+            "level": "INFO",
+            "formatter": "simple",
+        },
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+        },
+    },
+    "loggers": {
+        "youtubarr": {
+            "handlers": ["db", "console"],
+            "level": "INFO",
+        },
+    },
+}

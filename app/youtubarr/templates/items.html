@@ -1,35 +1,109 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1 class="display-6 fw-semibold mb-3">Items (latest)</h1>
+  <h1 class="display-6 fw-semibold mb-3">Items <small class="text-muted fs-6">({{ total }})</small></h1>
+
+  <!-- Search & Filters -->
+  <form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto" style="min-width:16rem;">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search title, artist, video ID...">
+    </div>
+    <div class="col-auto">
+      <select name="status" class="form-select form-select-sm">
+        <option value="" {% if not status %}selected{% endif %}>All</option>
+        <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+        <option value="dismissed" {% if status == "dismissed" %}selected{% endif %}>Dismissed</option>
+        <option value="blacklisted" {% if status == "blacklisted" %}selected{% endif %}>Blacklisted</option>
+      </select>
+    </div>
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <div class="col-auto">
+      <button class="btn btn-sm btn-primary">Filter</button>
+    </div>
+    {% if q or status %}
+    <div class="col-auto">
+      <a href="{% url 'items' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </div>
+    {% endif %}
+  </form>
+
   <div class="card">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th style="width:3rem;">BL</th>
-            <th>Playlist</th>
-            <th>Video</th>
-            <th>Title</th>
-            <th>Artist guess</th>
-            <th>MBID</th>
-            <th>Published</th>
+            <th style="width:3rem;">
+              {% if sort == "blacklisted" %}<a href="?q={{ q }}&status={{ status }}&sort=-blacklisted">BL &#x25B2;</a>
+              {% elif sort == "-blacklisted" %}<a href="?q={{ q }}&status={{ status }}&sort=blacklisted">BL &#x25BC;</a>
+              {% else %}<a href="?q={{ q }}&status={{ status }}&sort=blacklisted">BL</a>{% endif %}
+            </th>
+            <th>
+              {% if sort == "playlist" %}<a href="?q={{ q }}&status={{ status }}&sort=-playlist">Playlist &#x25B2;</a>
+              {% elif sort == "-playlist" %}<a href="?q={{ q }}&status={{ status }}&sort=playlist">Playlist &#x25BC;</a>
+              {% else %}<a href="?q={{ q }}&status={{ status }}&sort=playlist">Playlist</a>{% endif %}
+            </th>
+            <th>
+              {% if sort == "video" %}<a href="?q={{ q }}&status={{ status }}&sort=-video">Video &#x25B2;</a>
+              {% elif sort == "-video" %}<a href="?q={{ q }}&status={{ status }}&sort=video">Video &#x25BC;</a>
+              {% else %}<a href="?q={{ q }}&status={{ status }}&sort=video">Video</a>{% endif %}
+            </th>
+            <th>
+              {% if sort == "title" %}<a href="?q={{ q }}&status={{ status }}&sort=-title">Title &#x25B2;</a>
+              {% elif sort == "-title" %}<a href="?q={{ q }}&status={{ status }}&sort=title">Title &#x25BC;</a>
+              {% else %}<a href="?q={{ q }}&status={{ status }}&sort=title">Title</a>{% endif %}
+            </th>
+            <th>
+              {% if sort == "artist" %}<a href="?q={{ q }}&status={{ status }}&sort=-artist">Artist &#x25B2;</a>
+              {% elif sort == "-artist" %}<a href="?q={{ q }}&status={{ status }}&sort=artist">Artist &#x25BC;</a>
+              {% else %}<a href="?q={{ q }}&status={{ status }}&sort=artist">Artist</a>{% endif %}
+            </th>
+            <th>
+              {% if sort == "mbid" %}<a href="?q={{ q }}&status={{ status }}&sort=-mbid">MBID &#x25B2;</a>
+              {% elif sort == "-mbid" %}<a href="?q={{ q }}&status={{ status }}&sort=mbid">MBID &#x25BC;</a>
+              {% else %}<a href="?q={{ q }}&status={{ status }}&sort=mbid">MBID</a>{% endif %}
+            </th>
+            <th>
+              {% if sort == "-published_at" %}<a href="?q={{ q }}&status={{ status }}&sort=published_at">Published &#x25BC;</a>
+              {% elif sort == "published_at" %}<a href="?q={{ q }}&status={{ status }}&sort=-published_at">Published &#x25B2;</a>
+              {% else %}<a href="?q={{ q }}&status={{ status }}&sort=-published_at">Published</a>{% endif %}
+            </th>
             <th style="width:10rem;">Actions</th>
           </tr>
         </thead>
         <tbody id="items-tbody">
-          {% for it in items %}
-            {% include "partials/item_row.html" with it=it %}
+          {% for entry in items %}
+            {% include "partials/item_row.html" with it=entry.item playlists=entry.playlists %}
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
 
-  <script>
-    // When server returns 204 on delete, remove the <tr hx-target="closest tr">
-    document.body.addEventListener('item-deleted', function(evt){
-      // htmx already removes the row if hx-swap="outerHTML" w/ 204? No.
-      // We'll rely on hx-target on the delete button instead (closest tr + swap:delete)
-    });
-  </script>
+  <!-- Pagination -->
+  {% if page.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% if page.has_previous %}
+        <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&sort={{ sort }}&page={{ page.previous_page_number }}">&#x2039;</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&#x2039;</span></li>
+      {% endif %}
+
+      {% for num in page.paginator.page_range %}
+        {% if num == page.number %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num == 1 or num == page.paginator.num_pages %}
+          <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&sort={{ sort }}&page={{ num }}">{{ num }}</a></li>
+        {% elif num > page.number|add:"-3" and num < page.number|add:"3" %}
+          <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&sort={{ sort }}&page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page.has_next %}
+        <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&sort={{ sort }}&page={{ page.next_page_number }}">&#x203A;</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&#x203A;</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
 {% endblock %}

@@ -1,37 +1,61 @@
-<tr id="row-{{ it.id }}">
+<tr id="row-{{ it.id }}" {% if it.dismissed %}class="dismissed-row"{% endif %}>
   <td>
     <form
       hx-post="{% url 'toggle-blacklist' it.id %}"
       hx-target="#row-{{ it.id }}"
       hx-swap="outerHTML">
       <input type="checkbox" name="blacklisted" {% if it.blacklisted %}checked{% endif %}
+             {% if it.dismissed %}disabled{% endif %}
              onchange="this.form.requestSubmit()">
     </form>
   </td>
-  <td class="text-monospace small">{{ it.playlist.playlist_id }}</td>
+  <td class="small">
+    {% with pl_str=playlists|join:", " %}
+      {% if pl_str|length > 25 %}
+        <span class="playlist-short" title="{{ pl_str }}" style="cursor:pointer;" onclick="this.style.display='none';this.nextElementSibling.style.display='inline';">{{ pl_str|truncatechars:25 }}</span><span class="playlist-full" style="display:none;cursor:pointer;" onclick="this.style.display='none';this.previousElementSibling.style.display='inline';">{{ pl_str }}</span>
+      {% else %}
+        {{ pl_str }}
+      {% endif %}
+    {% endwith %}
+  </td>
   <td><a href="https://youtu.be/{{ it.video_id }}" target="_blank"> {{ it.video_id }} </a></td>
   <td>
+    {% if it.dismissed %}
+      <span>{{ it.title }}</span>
+    {% else %}
     <form class="d-flex gap-2"
           hx-post="{% url 'edit-item' it.id %}"
           hx-target="#row-{{ it.id }}"
           hx-swap="outerHTML">
       <input type="text" name="title" value="{{ it.title }}" class="form-control form-control-sm" style="max-width: 22rem;">
+    {% endif %}
   </td>
   <td>
+    {% if it.dismissed %}
+      <span>{{ it.artist_name_guess }}</span>
+    {% else %}
       <input type="text" name="artist_name_guess" value="{{ it.artist_name_guess }}" class="form-control form-control-sm" style="max-width: 14rem;">
+    {% endif %}
   </td>
   <td class="small">{{ it.artist.mbid|default:"–" }}</td>
   <td class="small text-nowrap">{{ it.published_at|date:"Y-m-d H:i" }}</td>
   <td class="text-nowrap">
+    {% if it.dismissed %}
+      <form hx-post="{% url 'restore-item' it.id %}"
+            hx-target="#row-{{ it.id }}"
+            hx-swap="outerHTML"
+            class="d-inline">
+        <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
+      </form>
+    {% else %}
       <button class="btn btn-sm btn-primary">Save</button>
     </form>
-
-    <form
-      hx-post="{% url 'delete-item' it.id %}"
-      hx-target="#row-{{ it.id }}"
-      hx-swap="delete"
-      class="d-inline">
-      <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-    </form>
+      <form hx-post="{% url 'dismiss-item' it.id %}"
+            hx-target="#row-{{ it.id }}"
+            hx-swap="outerHTML"
+            class="d-inline">
+        <button type="submit" class="btn btn-sm btn-outline-danger">Dismiss</button>
+      </form>
+    {% endif %}
   </td>
 </tr>

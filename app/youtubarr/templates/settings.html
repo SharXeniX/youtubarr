@@ -14,9 +14,52 @@
 </form>
 
 <hr>
-<p>Health: <code>/healthz</code></p>
+<h5 class="mt-4">YouTube OAuth</h5>
+<p class="text-muted">Required for private playlists and Liked Music.</p>
+{% if not oauth_configured %}
+  <div class="alert alert-warning">OAuth not configured. Set <code>YOUTUBE_OAUTH_CLIENT_ID</code> and <code>YOUTUBE_OAUTH_CLIENT_SECRET</code> in environment.</div>
+{% elif oauth_connected %}
+  <div class="alert alert-success d-flex align-items-center justify-content-between">
+    <span>&#x2714; YouTube account connected.</span>
+    <a href="{% url 'oauth-start' %}" class="btn btn-sm btn-outline-secondary">Reconnect</a>
+  </div>
+{% else %}
+  <a href="{% url 'oauth-start' %}" class="btn btn-danger">Connect YouTube Account</a>
+{% endif %}
+
+<hr>
+<h5 class="mt-4">MusicBrainz OAuth</h5>
+<p class="text-muted">Required for artist MBID lookups via MusicBrainz API.</p>
+{% if not mb_oauth_configured %}
+  <div class="alert alert-warning">MusicBrainz OAuth not configured. Set <code>MB_OAUTH_CLIENT_ID</code> and <code>MB_OAUTH_CLIENT_SECRET</code> in environment.</div>
+{% elif mb_oauth_connected %}
+  <div class="alert alert-success d-flex align-items-center justify-content-between">
+    <span>&#x2714; MusicBrainz account connected.</span>
+    <a href="{% url 'mb-oauth-start' %}" class="btn btn-sm btn-outline-secondary">Reconnect</a>
+  </div>
+{% else %}
+  <a href="{% url 'mb-oauth-start' %}" class="btn btn-warning">Connect MusicBrainz Account</a>
+{% endif %}
+
+<hr>
+<h5 class="mt-4">Lidarr Import List</h5>
 {% if lidarr_token %}
-  <p>Lidarr youtubarr: <code>/api/v1/lidarr?token={{ lidarr_token }}</code></p>
+  <div class="input-group mb-3" style="max-width: 42rem;">
+    <input type="text" class="form-control form-control-sm text-monospace" id="lidarr-url" readonly
+           value="http://gluetun:80/youtubarr/api/v1/lidarr?token={{ lidarr_token }}">
+    <button class="btn btn-sm btn-outline-secondary" type="button" onclick="copyLidarrUrl()">Copy</button>
+  </div>
+  <div class="form-text">Add this URL as a <strong>Custom List</strong> in Lidarr &rarr; Settings &rarr; Import Lists.</div>
+  <script>
+  function copyLidarrUrl() {
+    const input = document.getElementById('lidarr-url');
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = input.nextElementSibling;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+  </script>
 {% else %}
   <p class="text-muted">No LIDARR_TOKEN set in environment.</p>
 {% endif %}
